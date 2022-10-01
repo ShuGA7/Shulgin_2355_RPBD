@@ -132,5 +132,133 @@ $$;
 
 CALL kol(20);
 
+/*7.Числа Люка. Объявляем и присваиваем значение переменной - количество числе Люка. Вывести на экран последовательность чисел. Где L0 = 2, L1 = 1 ; Ln=Ln-1 + Ln-2 (сумма двух предыдущих чисел). Задания: написать фунцию, входной параметр - количество чисел, на выходе - последнее число (Например: входной 5, 2 1 3 4 7 - на выходе число 7); написать процедуру, которая выводит все числа последовательности. Входной параметр - количество чисел.*/
+/*FUNCTION.*/
+CREATE OR REPLACE FUNCTION lukef(i int) RETURNS int
+AS $$
+DECLARE
+    L1 int := 2;
+    L2 int := 1;
+    Ln int := 0;
+BEGIN
+	FOR i IN 1..i-2 LOOP
+        Ln := L1 + L2;
+        L1 := L2;
+        L2 := Ln;
+	END LOOP;
+    RETURN Ln;
+END
+$$ LANGUAGE plpgsql;
+
+SELECT lukef(5)
+/*PROCEDURE.*/
+CREATE OR REPLACE PROCEDURE lukep(i int)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    L1 int := 2;
+    L2 int := 1;
+    Ln int := 0;
+BEGIN 
+    RAISE NOTICE '%', L1;
+    RAISE NOTICE '%', L2;
+    FOR i IN 1..i-2 LOOP
+        Ln := L1 + L2;
+        RAISE NOTICE '%', Ln;
+        L1 := L2;
+        L2 := Ln;
+    END LOOP;
+END;
+$$;
+
+CALL lukep(5);
+
+/*8.Напишите функцию, которая возвращает количество человек родившихся в заданном году.*/
+CREATE OR REPLACE FUNCTION birth_year(god int) RETURNS int
+AS $$
+DECLARE
+    cur CURSOR (input integer) FOR SELECT * FROM people WHERE EXTRACT(year FROM people.birth_date) = birth_year.god;
+    p people%ROWTYPE;
+    k int := 0;
+BEGIN
+    OPEN cur(5);
+   loop
+   		FETCH cur INTO p;
+   		exit when not found;
+   		k := k + 1;
+   end loop;
+   CLOSE cur;
+   RETURN k;
+END
+$$ LANGUAGE plpgsql;
+
+SELECT birth_year(1995)
+
+/*9.Напишите функцию, которая возвращает количество человек с заданным цветом глаз..*/
+CREATE OR REPLACE FUNCTION colour(cvet varchar) RETURNS int
+AS $$
+DECLARE
+    cur CURSOR (input integer) FOR SELECT * FROM people WHERE eyes = colour.cvet;
+	p people%ROWTYPE;
+	k int := 0;
+BEGIN
+   OPEN cur(5);
+   loop
+   		FETCH cur INTO p;
+   		exit when not found;
+   		k := k + 1;
+   end loop;
+   CLOSE cur;
+   RETURN k;
+END
+$$ LANGUAGE plpgsql;
+
+SELECT colour('brown')
+/*10.Напишите функцию, которая возвращает ID самого молодого человека в таблице.
+CREATE OR REPLACE FUNCTION searchid(i int) RETURNS int
+AS $$
+DECLARE
+	cur CURSOR (input integer) FOR SELECT * FROM people;
+	p people%ROWTYPE;
+    id int;
+BEGIN
+	OPEN cur(5);
+	loop
+   		FETCH cur INTO p;
+   		exit when not found;
+   		SELECT people.id INTO id
+    	FROM people
+    	WHERE people.id < serachid.i;
+		IF people.id < serachid.i THEN
+			searchid.i = pople.id;
+   	END LOOP;
+   	CLOSE cur;
+    RETURN id;
+END
+$$ LANGUAGE plpgsql;
+*/
+/*11 Напишите процедуру, которая возвращает людей с индексом массы тела больше заданного. ИМТ = масса в кг / (рост в м)^2.
+CREATE OR REPLACE PROCEDURE imt(zdn float)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    cur CURSOR (input integer) FOR SELECT * FROM people WHERE weight/((growth/100 + (mod(growth, 100)))^2) > imt.zdn;
+	p people%ROWTYPE;
+    k int := 0;
+BEGIN 
+    OPEN cur(10);
+    loop
+   		FETCH cur INTO p;
+   		exit when not found;
+        k = k + 1;
+   end loop;
+   CLOSE cur;
+   RAISE NOTICE '%', p;
+   RAISE NOTICE '%', k;
+END;
+$$;
+CALL imt(0.3);
+*/
+
 
 
