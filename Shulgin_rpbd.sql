@@ -1,7 +1,17 @@
 /*1.Выведите на экран любое сообщение.*/
-SELECT 'Любое сообщение'
+DO
+$$
+BEGIN
+    RAISE NOTICE 'Message';
+END
+$$
 /*2.Выведите на экран текущую дату.*/
-SELECT CURRENT_DATE
+DO
+$$
+BEGIN
+    RAISE NOTICE 'Curent date: %', CURRENT_DATE;
+END
+$$
 /*3.Создайте две числовые переменные и присвойте им значение. Выполните математические действия с этими числами и выведите результат на экран.*/
 CREATE OR REPLACE PROCEDURE sum_two(INOUT x int, y int)
 LANGUAGE plpgsql
@@ -215,50 +225,18 @@ $$ LANGUAGE plpgsql;
 
 SELECT colour('brown')
 /*10.Напишите функцию, которая возвращает ID самого молодого человека в таблице.
-CREATE OR REPLACE FUNCTION searchid(i int) RETURNS int
+CREATE OR REPLACE FUNCTION get_junior_user_id(weight real) RETURNS integer
 AS $$
 DECLARE
-	cur CURSOR (input integer) FOR SELECT * FROM people;
-	p people%ROWTYPE;
-    id int;
+    answer integer;
 BEGIN
-	OPEN cur(5);
-	loop
-   		FETCH cur INTO p;
-   		exit when not found;
-   		SELECT people.id INTO id
-    	FROM people
-    	WHERE people.id < serachid.i;
-		IF people.id < serachid.i THEN
-			searchid.i = pople.id;
-   	END LOOP;
-   	CLOSE cur;
-    RETURN id;
+    SELECT id INTO STRICT answer FROM people WHERE birth_date = (SELECT MAX(birth_date) FROM people);
+    RETURN answer;
 END
 $$ LANGUAGE plpgsql;
-*/
-/*11 Напишите процедуру, которая возвращает людей с индексом массы тела больше заданного. ИМТ = масса в кг / (рост в м)^2.
-CREATE OR REPLACE PROCEDURE imt(zdn float)
-LANGUAGE plpgsql
-AS $$
-DECLARE
-    cur CURSOR (input integer) FOR SELECT * FROM people WHERE weight/((growth/100 + (mod(growth, 100)))^2) > imt.zdn;
-	p people%ROWTYPE;
-    k int := 0;
-BEGIN 
-    OPEN cur(10);
-    loop
-   		FETCH cur INTO p;
-   		exit when not found;
-        k = k + 1;
-   end loop;
-   CLOSE cur;
-   RAISE NOTICE '%', p;
-   RAISE NOTICE '%', k;
-END;
-$$;
-CALL imt(0.3);
-*/
+
+SELECT get_junior_user_id();
+
 
 
 
