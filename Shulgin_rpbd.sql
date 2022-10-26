@@ -224,7 +224,7 @@ END
 $$ LANGUAGE plpgsql;
 
 SELECT colour('brown')
-/*10.Напишите функцию, которая возвращает ID самого молодого человека в таблице.
+/*10.Напишите функцию, которая возвращает ID самого молодого человека в таблице.*/
 CREATE OR REPLACE FUNCTION get_junior_user_id(weight real) RETURNS integer
 AS $$
 DECLARE
