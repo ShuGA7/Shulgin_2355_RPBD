@@ -237,6 +237,61 @@ $$ LANGUAGE plpgsql;
 
 SELECT get_junior_user_id();
 
+/*11 Напишите процедуру, которая возвращает людей с индексом массы тела больше заданного. ИМТ = масса в кг / (рост в м)^2.*/
+CREATE OR REPLACE PROCEDURE IMT(imt int)
+AS $$
+DECLARE
+    pRT people%ROWTYPE;
+BEGIN
+    FOR pRT IN SELECT * FROM people
+    LOOP
+        IF pRT.weight / (pRT.growth/100)^2 > imt THEN
+            RAISE NOTICE 'id: %, name: %, surname: %', pRT.id, pRT.name, pRT.surname;
+        END IF;
+    END LOOP;
+END
+$$ LANGUAGE plpgsql;
+/*12. Измените схему БД так, чтобы в БД можно было хранить родственные связи между людьми. Код должен быть представлен в виде транзакции (Например (добавление атрибута): BEGIN; ALTER TABLE people ADD COLUMN leg_size REAL; COMMIT;). Дополните БД данными.*/
+BEGIN;
+CREATE TABLE con(
+people_id int REFERENCES people(id),
+rel_id int REFERENCES people(id)
+);
+INSERT INTO con (people_id, rel_id)
+VALUES (2, 1),
+(3, 2),
+COMMIT;
+/*13. Напишите процедуру, которая позволяет создать в БД нового человека с указанным родством.*/
+CREATE OR REPLACE PROCEDURE addrel
+(name varchar, surname varchar, birth_date date, growth real, weight real, eyes varchar, hair varchar, rel_id int, pep1_id int, pep2_id int)
+AS $$
+DECLARE
+person_id int;
+BEGIN
+INSERT INTO people (name, surname, birth_date, growth, weight, eyes, hair)
+VALUES (name, surname, birth_date, growth, weight, eyes, hair) RETURNING id INTO person_id;
+INSERT INTO con (people_id, rel_id)
+VALUES (person_id, rel_id);
+INSERT INTO con (people_id, rel_id)
+VALUES (pep1_id, person_id);
+INSERT INTO con (people_id, rel_id)
+VALUES (pep2_id, person_id);
+END
+$$ LANGUAGE plpgsql;
+/*14. Измените схему БД так, чтобы в БД можно было хранить время актуальности данных человека (выполнить также, как п.12).*/
+BEGIN;
+ALTER TABLE people
+ADD time_of_relevance timestamp NOT NULL DEFAULT NOW();
+COMMIT;
+/*15. Напишите процедуру, которая позволяет актуализировать рост и вес человека.*/
+LANGUAGE plpgsql
+AS $$
+BEGIN
+UPDATE people
+SET growth = newGrowth, weight = newWeight, time_of_relevance = NOW()
+WHERE people.id = person_id;
+END
+$$;
 
 
 
