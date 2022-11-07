@@ -1,7 +1,17 @@
 /*1.Выведите на экран любое сообщение.*/
-SELECT 'Любое сообщение'
+DO
+$$
+BEGIN
+    RAISE NOTICE 'Message';
+END
+$$
 /*2.Выведите на экран текущую дату.*/
-SELECT CURRENT_DATE
+DO
+$$
+BEGIN
+    RAISE NOTICE 'Curent date: %', CURRENT_DATE;
+END
+$$
 /*3.Создайте две числовые переменные и присвойте им значение. Выполните математические действия с этими числами и выведите результат на экран.*/
 CREATE OR REPLACE PROCEDURE sum_two(INOUT x int, y int)
 LANGUAGE plpgsql
@@ -131,6 +141,157 @@ END;
 $$;
 
 CALL kol(20);
+
+/*7.Числа Люка. Объявляем и присваиваем значение переменной - количество числе Люка. Вывести на экран последовательность чисел. Где L0 = 2, L1 = 1 ; Ln=Ln-1 + Ln-2 (сумма двух предыдущих чисел). Задания: написать фунцию, входной параметр - количество чисел, на выходе - последнее число (Например: входной 5, 2 1 3 4 7 - на выходе число 7); написать процедуру, которая выводит все числа последовательности. Входной параметр - количество чисел.*/
+/*FUNCTION.*/
+CREATE OR REPLACE FUNCTION lukef(i int) RETURNS int
+AS $$
+DECLARE
+    L1 int := 2;
+    L2 int := 1;
+    Ln int := 0;
+BEGIN
+	FOR i IN 1..i-2 LOOP
+        Ln := L1 + L2;
+        L1 := L2;
+        L2 := Ln;
+	END LOOP;
+    RETURN Ln;
+END
+$$ LANGUAGE plpgsql;
+
+SELECT lukef(5)
+/*PROCEDURE.*/
+CREATE OR REPLACE PROCEDURE lukep(i int)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    L1 int := 2;
+    L2 int := 1;
+    Ln int := 0;
+BEGIN 
+    RAISE NOTICE '%', L1;
+    RAISE NOTICE '%', L2;
+    FOR i IN 1..i-2 LOOP
+        Ln := L1 + L2;
+        RAISE NOTICE '%', Ln;
+        L1 := L2;
+        L2 := Ln;
+    END LOOP;
+END;
+$$;
+
+CALL lukep(5);
+
+/*8.Напишите функцию, которая возвращает количество человек родившихся в заданном году.*/
+CREATE OR REPLACE FUNCTION birth_year(god int) RETURNS int
+AS $$
+DECLARE
+    cur CURSOR (input integer) FOR SELECT * FROM people WHERE EXTRACT(year FROM people.birth_date) = birth_year.god;
+    p people%ROWTYPE;
+    k int := 0;
+BEGIN
+    OPEN cur(5);
+   loop
+   		FETCH cur INTO p;
+   		exit when not found;
+   		k := k + 1;
+   end loop;
+   CLOSE cur;
+   RETURN k;
+END
+$$ LANGUAGE plpgsql;
+
+SELECT birth_year(1995)
+
+/*9.Напишите функцию, которая возвращает количество человек с заданным цветом глаз..*/
+CREATE OR REPLACE FUNCTION colour(cvet varchar) RETURNS int
+AS $$
+DECLARE
+    cur CURSOR (input integer) FOR SELECT * FROM people WHERE eyes = colour.cvet;
+	p people%ROWTYPE;
+	k int := 0;
+BEGIN
+   OPEN cur(5);
+   loop
+   		FETCH cur INTO p;
+   		exit when not found;
+   		k := k + 1;
+   end loop;
+   CLOSE cur;
+   RETURN k;
+END
+$$ LANGUAGE plpgsql;
+
+SELECT colour('brown')
+/*10.Напишите функцию, которая возвращает ID самого молодого человека в таблице.*/
+CREATE OR REPLACE FUNCTION get_junior_user_id(weight real) RETURNS integer
+AS $$
+DECLARE
+    answer integer;
+BEGIN
+    SELECT id INTO STRICT answer FROM people WHERE birth_date = (SELECT MAX(birth_date) FROM people);
+    RETURN answer;
+END
+$$ LANGUAGE plpgsql;
+
+SELECT get_junior_user_id();
+
+/*11 Напишите процедуру, которая возвращает людей с индексом массы тела больше заданного. ИМТ = масса в кг / (рост в м)^2.*/
+CREATE OR REPLACE PROCEDURE IMT(imt int)
+AS $$
+DECLARE
+    pRT people%ROWTYPE;
+BEGIN
+    FOR pRT IN SELECT * FROM people
+    LOOP
+        IF pRT.weight / (pRT.growth/100)^2 > imt THEN
+            RAISE NOTICE 'id: %, name: %, surname: %', pRT.id, pRT.name, pRT.surname;
+        END IF;
+    END LOOP;
+END
+$$ LANGUAGE plpgsql;
+/*12. Измените схему БД так, чтобы в БД можно было хранить родственные связи между людьми. Код должен быть представлен в виде транзакции (Например (добавление атрибута): BEGIN; ALTER TABLE people ADD COLUMN leg_size REAL; COMMIT;). Дополните БД данными.*/
+BEGIN;
+CREATE TABLE con(
+people_id int REFERENCES people(id),
+rel_id int REFERENCES people(id)
+);
+INSERT INTO con (people_id, rel_id)
+VALUES (2, 1),
+(3, 2),
+COMMIT;
+/*13. Напишите процедуру, которая позволяет создать в БД нового человека с указанным родством.*/
+CREATE OR REPLACE PROCEDURE addrel
+(name varchar, surname varchar, birth_date date, growth real, weight real, eyes varchar, hair varchar, rel_id int, pep1_id int, pep2_id int)
+AS $$
+DECLARE
+person_id int;
+BEGIN
+INSERT INTO people (name, surname, birth_date, growth, weight, eyes, hair)
+VALUES (name, surname, birth_date, growth, weight, eyes, hair) RETURNING id INTO person_id;
+INSERT INTO con (people_id, rel_id)
+VALUES (person_id, rel_id);
+INSERT INTO con (people_id, rel_id)
+VALUES (pep1_id, person_id);
+INSERT INTO con (people_id, rel_id)
+VALUES (pep2_id, person_id);
+END
+$$ LANGUAGE plpgsql;
+/*14. Измените схему БД так, чтобы в БД можно было хранить время актуальности данных человека (выполнить также, как п.12).*/
+BEGIN;
+ALTER TABLE people
+ADD time_of_relevance timestamp NOT NULL DEFAULT NOW();
+COMMIT;
+/*15. Напишите процедуру, которая позволяет актуализировать рост и вес человека.*/
+LANGUAGE plpgsql
+AS $$
+BEGIN
+UPDATE people
+SET growth = newGrowth, weight = newWeight, time_of_relevance = NOW()
+WHERE people.id = person_id;
+END
+$$;
 
 
 
