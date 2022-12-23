@@ -1,5 +1,6 @@
 Telegram-bot для составления списка дел
 Для списка команд - /help
 Токен бота вставить в docker-compose.yml
+Собрать проект go build -o build
 Создание образа контейнера для docker: docker build -t todolist -f dockerfile .
 Запуск контейнера: docker-compose up --build -d
