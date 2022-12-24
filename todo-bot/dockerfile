@@ -1,0 +1,7 @@
+FROM alpine
+WORKDIR /todo-bot
+COPY build/ .
+RUN apk add --no-cache ca-certificates
+RUN apk add libc6-compat
+RUN chmod +x todo-bot
+CMD ./todo-bot

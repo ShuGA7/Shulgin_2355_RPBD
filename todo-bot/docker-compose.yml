@@ -1,0 +1,21 @@
+version: '3.5'
+
+services:
+
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: 111
+      POSTGRES_USER: postgres
+
+  bot:
+    image: todolist
+    restart: always
+    environment:
+      TOKEN: 5905533683:AAHF8Gv_eq-eVIx3hiinitq5lkU_uZw8_BE
+      HOST: db
+      PORT: 5432
+      USER: postgres
+      PASSWORD: 111
+      DBNAME: postgres
